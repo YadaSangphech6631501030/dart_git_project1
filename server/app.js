@@ -58,17 +58,21 @@ app.get('/expenses/today/:userId', (req, res) => {
     });
 });
 
-// Search expenses 
-app.get('/expenses/search', (req, res) => {
-    const { keyword, userId } = req.query;
-    if (!keyword || !userId) return res.status(400).send("Keyword and userId required");
-
+app.get('/expenses/:userId/search', (req, res) => {
+    const userId = req.params.userId;
+    const search = req.query.keyword;
+    if (!search || !userId) {
+        return res.status(400).send("Keyword and userId required");
+    }
     const sql = "SELECT * FROM expenses WHERE user_id = ? AND item LIKE ?";
-    con.query(sql, [userId, `%${keyword}%`], (err, results) => {
-        if (err) return res.status(500).send("Database server error");
+    const searchPattern = '%' + search + '%';
+    con.query(sql, [userId, searchPattern], (err, results) => {
+        if (err) return res.status(500).send('Database error!');
         res.json(results);
     });
 });
+
+
 
 // Add new expense
 app.post('/expenses/add', (req, res) => {
