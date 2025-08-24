@@ -58,32 +58,41 @@ app.get('/expenses/today/:userId', (req, res) => {
     });
 });
 
-// Search expenses 
-app.get('/expenses/search', (req, res) => {
-    const { keyword, userId } = req.query;
-    if (!keyword || !userId) return res.status(400).send("Keyword and userId required");
-
+app.get('/expenses/:userId/search', (req, res) => {
+    const userId = req.params.userId;
+    const search = req.query.keyword;
+    if (!search || !userId) {
+        return res.status(400).send("Keyword and userId required");
+    }
     const sql = "SELECT * FROM expenses WHERE user_id = ? AND item LIKE ?";
-    con.query(sql, [userId, `%${keyword}%`], (err, results) => {
-        if (err) return res.status(500).send("Database server error");
+    const searchPattern = '%' + search + '%';
+    con.query(sql, [userId, searchPattern], (err, results) => {
+        if (err) return res.status(500).send('Database error!');
         res.json(results);
     });
 });
 
+
+
 // Add new expense
-app.post('/expenses/add', (req, res) => {
-    const { userId, item, paid } = req.body;
-    if (!userId || !item || !paid) return res.status(400).send("userId, item and paid required");
+app.post('/expenses', (req, res) => {
+    const { user_id, item, paid } = req.body;   
+    if (!user_id || !item || !paid) {
+        return res.status(400).json({ error: "user_id, item and paid required" });
+    }
 
     const sql = "INSERT INTO expenses (user_id, item, paid, date) VALUES (?, ?, ?, NOW())";
-    con.query(sql, [userId, item, paid], (err, result) => {
-        if (err) return res.status(500).send("Database server error");
-        res.json({ message: "Expense added", expenseId: result.insertId });
+    con.query(sql, [user_id, item, paid], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Database server error" });
+        }
+        res.status(201).json({ message: "Expense added", expenseId: result.insertId });
     });
 });
 
 // Delete expense 
-app.delete('/expenses/delete/:id', (req, res) => {
+app.delete('/expenses/:id', (req, res) => {   
     const id = req.params.id;
     const sql = "DELETE FROM expenses WHERE id = ?";
     con.query(sql, [id], (err, result) => {
@@ -92,6 +101,7 @@ app.delete('/expenses/delete/:id', (req, res) => {
         res.json({ message: "Expense deleted" });
     });
 });
+
 
 
 const PORT = 3000;

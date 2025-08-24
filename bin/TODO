@@ -1,0 +1,6 @@
+[progress] dev 1 uses branch "feature expense-list" and add code to show all-expense
+[progress] dev 1 uses branch "feature expense-list" and add code to show today-expense
+[progress] dev 2 uses branch "feature search-expense" and add code to  search-expense
+[progress] dev 3 uses branch "feature add-delete-expense" and add code to add-expense
+[progress] dev 3 uses branch "feature add-delete-expense" and add code to delete-expense
+
