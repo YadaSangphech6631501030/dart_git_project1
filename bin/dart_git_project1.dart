@@ -20,8 +20,11 @@ void main() async {
   final url = Uri.parse('http://localhost:3000/login');
   final response = await http.post(url, body: body);
 
+  final data = jsonDecode(response.body);
+  final userId = data['userId'];
+
   if (response.statusCode == 200) {
-    await expenseMenu(username);
+    await expenseMenu(username,userId);
   } else if (response.statusCode == 401 || response.statusCode == 500) {
     print(response.body);
   } else {
@@ -29,7 +32,7 @@ void main() async {
   }
 }
 
-Future<void> expenseMenu(String username) async {
+Future<void> expenseMenu(String username, int userId) async {
   while (true) {
     print("\n===== Expense Tracking =====");
     print("Welcome $username ");
@@ -47,7 +50,7 @@ Future<void> expenseMenu(String username) async {
     } else if (choice == '2') {
       await showTodayExpenses();
     } else if (choice == '3') {
-      await searchExpenses();
+      await searchExpenses(userId);
     } else if (choice == '4') {
       await addExpenses();
     } else if (choice == '5') {
@@ -75,11 +78,35 @@ Future<void> showTodayExpenses() async {
   // Print today's expenses
 }
 
-Future<void> searchExpenses() async {
+Future<void> searchExpenses(int userId) async {
   print("----- Search expenses -----");
   // Ask user for keyword/date
-  // Call API (GET /expenses/search?query=...)
-  // Print search results
+  stdout.write("Item to search: ");
+  String? search = stdin.readLineSync()?.trim();
+
+  if (search == null || search.isEmpty) {
+    print("Please enter a search keyword.");
+    return;
+  }
+  
+  final uri = Uri.http('localhost:3000', '/expenses/$userId/search', {'keyword': search});
+  try {
+    final response = await http.get(uri);
+
+    // Print search results
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body) as List;
+      if (result.isNotEmpty) {
+        for (Map exp in result) {
+          print('${exp['id']}. ${exp['item']} : ${exp['paid']} : ${exp["date"]}');
+        }
+      } else {
+        print("No item: '$search'");
+      }
+    } 
+  } catch (e) {
+    print("Unkonwn error");
+  }
 }
 
 Future<void> addExpenses() async {
