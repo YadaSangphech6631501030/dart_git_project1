@@ -64,8 +64,6 @@ Future<void> expenseMenu(String username) async {
 
 
  Future<void> showAllExpenses() async {
-  if (userID== null) { print("Not logged in."); return; }
-
   print("---------- All expenses ----------");
   num total = 0;
   final r = await http.get(Uri.parse('http://localhost:3000/expenses/$userID'));
@@ -86,9 +84,8 @@ Future<void> expenseMenu(String username) async {
 }
 
 Future<void> showTodayExpenses() async {
-  if (userID == null) return print("Not logged in.");
-
-  final r = await http.get(Uri.parse('http://localhost:3000/expenses/today/$userID'));
+  print("----- Today's expenses -----");
+ final r = await http.get(Uri.parse('http://localhost:3000/expenses/today/$userID'));
   if (r.statusCode != 200) return print('Error ${r.statusCode}: ${r.body}');
 
   final list = json.decode(r.body) as List;
