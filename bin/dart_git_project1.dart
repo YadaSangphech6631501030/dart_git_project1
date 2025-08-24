@@ -2,30 +2,31 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// login
+
+int? userID;
+
 void main() async {
   print("\n===== Login =====");
   stdout.write("Username: ");
-  String? username = stdin.readLineSync()?.trim();
+  final username = stdin.readLineSync()?.trim();
   stdout.write("Password: ");
-  String? password = stdin.readLineSync()?.trim();
+  final password = stdin.readLineSync()?.trim();
 
-  //Incomplete input
-  if (username == null || password == null) {
+  if (username == null || password == null || username.isEmpty || password.isEmpty) {
     print("Incomplete input");
     return;
   }
 
-  final body = {"username": username, "password": password};
   final url = Uri.parse('http://localhost:3000/login');
-  final response = await http.post(url, body: body);
+  final res = await http.post(url, body: {"username": username, "password": password});
 
-  if (response.statusCode == 200) {
+  if (res.statusCode == 200) {
+    final data = json.decode(res.body);
+    
+    userID = (data['userId'] as num).toInt();
     await expenseMenu(username);
-  } else if (response.statusCode == 401 || response.statusCode == 500) {
-    print(response.body); 
   } else {
-    print("Unknown error");
+    print(res.body);
   }
 }
 
@@ -61,18 +62,44 @@ Future<void> expenseMenu(String username) async {
   }
 }
 
-Future<void> showAllExpenses() async {
- print("----- All expenses -----");
- // Call API (GET /expenses)
- // Parse JSON response
- // Print all expenses 
+
+ Future<void> showAllExpenses() async {
+  if (userID== null) { print("Not logged in."); return; }
+
+  print("---------- All expenses ----------");
+  num total = 0;
+  final r = await http.get(Uri.parse('http://localhost:3000/expenses/$userID'));
+  if (r.statusCode != 200) {
+    print('Error ${r.statusCode}: ${r.body}');
+    return;
+  }
+  final List list = json.decode(r.body);
+  if (list.isEmpty) { print('No expenses.'); return; }
+
+  for (final e in list) {
+    final paid = (e['paid'] as num);
+    final dateText = e['formatted_date'] ?? e['date'];
+    print('${e['id']}. ${e['item']} : ${paid}฿ : $dateText');
+    total += paid;
+  }
+  print('Total expenses = ${total}฿');
 }
 
 Future<void> showTodayExpenses() async {
- print("----- Today's expenses -----");
-  // Call API (GET /expenses/today)
-  // Filter expenses by today's date
-  // Print today's expenses
+  if (userID == null) return print("Not logged in.");
+
+  final r = await http.get(Uri.parse('http://localhost:3000/expenses/today/$userID'));
+  if (r.statusCode != 200) return print('Error ${r.statusCode}: ${r.body}');
+
+  final list = json.decode(r.body) as List;
+  if (list.isEmpty) return print('No expenses today.');
+
+  num total = 0;
+  for (final e in list) {
+    print('${e['id']}. ${e['item']} : ${e['paid']}฿ : ${e['date']}');
+    total += (e['paid'] as num);
+  }
+  print('Total expenses = ${total}฿');
 }
 
 
