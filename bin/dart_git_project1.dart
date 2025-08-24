@@ -91,7 +91,6 @@ Future<void> searchExpenses(int userId) async {
   }
   
   final uri = Uri.http('localhost:3000', '/expenses/$userId/search', {'keyword': search});
-
   try {
     final response = await http.get(uri);
 
