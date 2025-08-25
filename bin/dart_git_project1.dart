@@ -2,57 +2,60 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// login
 void main() async {
-  print("\n===== Login =====");
+  print("===== Login =====");
   stdout.write("Username: ");
   String? username = stdin.readLineSync()?.trim();
   stdout.write("Password: ");
   String? password = stdin.readLineSync()?.trim();
 
-  //Incomplete input
-  if (username == null || password == null) {
-    print("Incomplete input");
-    return;
-  }
-
-  final body = {"username": username, "password": password};
-  final url = Uri.parse('http://localhost:3000/login');
-  final response = await http.post(url, body: body);
+  final response = await http.post(
+    Uri.parse('http://localhost:3000/login'),
+    body: {'username': username, 'password': password},
+  );
 
   final data = jsonDecode(response.body);
-  final userId = data['userId'];
 
-  if (response.statusCode == 200) {
-    await expenseMenu(username,userId);
-  } else if (response.statusCode == 401 || response.statusCode == 500) {
-    print(response.body);
+  if (data is List && data.isNotEmpty) {
+    final userId = data[0]['userId'];
+    await expenseMenu(username ?? 'User', userId);
+  } else if (data is Map) {
+    if (data.containsKey('userId')) {
+      final userId = data['userId'];
+      await expenseMenu(username ?? 'User', userId);
+    } else if (data.containsKey('error')) {
+      print("${data['error']}");
+    } else {
+      print("$data");
+    }
   } else {
-    print("Unknown error");
+    print("$data");
   }
 }
+
+
 
 Future<void> expenseMenu(String username, int userId) async {
   while (true) {
     print("\n===== Expense Tracking =====");
     print("Welcome $username ");
-    print("1. All expenses"); // dev 1
-    print("2. Today's expenses"); // dev 1
-    print("3. Search expense"); // dev 2
-    print("4. Add new expense"); // dev 3
-    print("5. Delete an expense"); // dev 3
+    print("1. All expenses"); 
+    print("2. Today's expenses"); 
+    print("3. Search expense"); 
+    print("4. Add new expense"); 
+    print("5. Delete an expense"); 
     print("6. Exit");
     stdout.write("Choose ... ");
     String? choice = stdin.readLineSync()?.trim();
 
     if (choice == '1') {
-      await showAllExpenses();
+      await showAllExpenses(userId);  
     } else if (choice == '2') {
-      await showTodayExpenses();
+      await showTodayExpenses(userId); 
     } else if (choice == '3') {
       await searchExpenses(userId);
     } else if (choice == '4') {
-      await addExpenses();
+      await addExpenses();       
     } else if (choice == '5') {
       await deleteExpenses();
     } else if (choice == '6') {
@@ -64,19 +67,50 @@ Future<void> expenseMenu(String username, int userId) async {
   }
 }
 
-Future<void> showAllExpenses() async {
+Future<void> showAllExpenses(int userId) async {   
   print("----- All expenses -----");
-  // Call API (GET /expenses)
-  // Parse JSON response
-  // Print all expenses
+  final url = Uri.parse('http://localhost:3000/expenses/$userId');
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final result = jsonDecode(response.body) as List;
+    if (result.isNotEmpty) {
+      int total = 0;
+      for (Map exp in result) {
+        print('${exp['id']}. ${exp['item']} : ${exp['paid']} : ${exp["date"]}');
+        total += exp['paid'] as int;
+      }
+      print("Total expenses = $total\$");
+    } else {
+      print("No expenses found.");
+    }
+  } else {
+    print("Error: ${response.body}");
+  }
 }
 
-Future<void> showTodayExpenses() async {
+Future<void> showTodayExpenses(int userId) async { 
   print("----- Today's expenses -----");
-  // Call API (GET /expenses/today)
-  // Filter expenses by today's date
-  // Print today's expenses
+  final url = Uri.parse('http://localhost:3000/expenses/today/$userId');
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final result = jsonDecode(response.body) as List;
+    if (result.isNotEmpty) {
+      int total = 0;
+      for (Map exp in result) {
+        print('${exp['id']}. ${exp['item']} : ${exp['paid']} : ${exp["date"]}');
+        total += exp['paid'] as int;
+      }
+      print("Total expenses = $total\$");
+    } else {
+      print("No expenses found for today.");
+    }
+  } else {
+    print("Error: ${response.body}");
+  }
 }
+
 
 Future<void> searchExpenses(int userId) async {
   print("----- Search expenses -----");
